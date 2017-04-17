@@ -69,6 +69,9 @@ var getAction = function(){
 };
 // Function to let the user to buy an item
 var buyFunction = function(){
+  // Prompt the user two messages
+  // ask for the id they would like to buy
+  // how many units they want to buy
   inquirer.prompt({
     name: "buy",
     type: "input",
@@ -79,6 +82,23 @@ var buyFunction = function(){
     connection.query(queryString , function(err, res){
         if(err) throw err;
         console.log(res);
+        var price = res[0].price;
+        console.log('Price: ' + price);
+        inquirer.prompt({
+          name: "quantity",
+          type: "input",
+          message: "How many would you like? "
+        }).then(function(answer){
+          quantity = answer.quantity;
+          if (res[0].stock_quantity < quantity) {
+            console.log("Sorry Insufficient Quantity");
+            buyFunction();
+          }else {
+            console.log("you can buy it");
+            var total = price * quantity;
+            console.log('Your order total: ' + total);
+          }
+        })
 
 
     });
@@ -89,9 +109,7 @@ var buyFunction = function(){
 
 
 
-// Prompt the user two messages
-// ask for the id they would like to buy
-// how many units they want to buy
+
 
 
 // When the customer placed the order your application should check if your store has enough of the products
