@@ -18,7 +18,7 @@ var connection = mysql.createConnection({
 connection.connect(function(err) {
   if (err) throw err;
   console.log("connected as id " + connection.threadId);
-  showTable();
+  getAction();
 });
 
 var table = new Table({
@@ -31,13 +31,14 @@ var table = new Table({
 var showTable = function(){
   connection.query("SELECT * FROM products",function(err, res){
     if(err) throw err;
+      table.splice(0, res.length);
       for(var i=0; i<res.length; i++){
         table.push(
           [res[i].item_id, res[i].product_name, res[i].department_name,"$" + res[i].price, res[i].stock_quantity]
         );
       }
       console.log(table.toString());
-      getAction();
+      buyFunction();
   });
 
 };
@@ -53,7 +54,7 @@ var getAction = function(){
     switch (answer.action) {
       case "Buy an Item":
           console.log("buy an item");
-          buyFunction();
+          showTable();
         break;
       case "Quit":
       connection.end(function(err) {
@@ -77,7 +78,8 @@ var buyFunction = function(){
     type: "input",
     message: "What's the id of the item that you like? "
   }).then(function(answer){
-    var queryString = "SELECT * FROM products WHERE item_id = "+ answer.buy;
+    var item = answer.buy;
+    var queryString = "SELECT * FROM products WHERE item_id = "+ item;
     console.log(queryString);
     connection.query(queryString , function(err, res){
         if(err) throw err;
@@ -90,13 +92,26 @@ var buyFunction = function(){
           message: "How many would you like? "
         }).then(function(answer){
           quantity = answer.quantity;
+          var quantityLeft;
           if (res[0].stock_quantity < quantity) {
             console.log("Sorry Insufficient Quantity");
             buyFunction();
           }else {
             console.log("you can buy it");
-            var total = price * quantity;
-            console.log('Your order total: ' + total);
+            var total = Math.round((price * quantity) * 100) / 100;
+
+            // console.log('Your order total: ' + total);
+            quantityLeft = res[0].stock_quantity - quantity;
+
+            connection.query("UPDATE products SET ? WHERE ?", [{
+              stock_quantity: quantityLeft
+            },
+            {
+              item_id: item
+            }], function(error){
+              console.log('Your order total: ' + total);
+              getAction();
+            })
           }
         })
 
